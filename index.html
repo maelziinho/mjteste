@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MJ Águas - A Melhor Água da Região</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Water+Brush&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" href="images/logo.ico" type="image/x-icon">
+</head>
+<body>
+    <!-- Capa -->
+    <div class="header" id="header">
+        <div class="bubbles">
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+        </div>
+        <img src="images/logomj.png" alt="MJ Águas">
+        <p class="header-slogan">Hidrate-se com qualidade!</p>
+        <button class="catalog-button" onclick="showInicio()">
+            <i class="fas fa-bottle-water"></i> Explorar Águas
+        </button>
+        <div class="informacoes" id="informacoes">
+            <p><i class="fas fa-clock"></i> Horário de Funcionamento: 09:00 - 18:00</p>
+            <p><i class="fas fa-motorcycle"></i> Entrega Rápida, atendimento de qualidade!</p>
+        </div>
+        <!-- Status de Aberto/Fechado -->
+        <div id="status-operacao">
+            <button class="status-button">
+                <span class="status-dot"></span>
+                <span class="status-text"></span>
+            </button>
+        </div>
+        <!-- Rodapé da Capa -->
+        <footer class="footer-capa">
+            Desenvolvido por Ismael Rocha © <span id="current-year"></span>
+        </footer>
+    </div>
+
+    <!-- Página Inicial -->
+    <div class="inicio" id="inicio" style="display: none;">
+        <!-- Menu de Categorias -->
+        <div class="categorias" id="categorias">
+            <button class="categoria-button" onclick="showInicio()" title="Início">
+                <i class="fas fa-home"></i>
+            </button>
+            <button class="categoria-button" onclick="filterProducts('Água Mineral')" title="Água Mineral">
+                <i class="fas fa-bottle-water"></i>
+            </button>
+            <button class="categoria-button" onclick="filterProducts('Gelada')" title="Água Gelada">
+                <i class="fas fa-temperature-low"></i>
+            </button>
+            <button class="categoria-button" onclick="filterProducts('Galão')" title="Galão">
+                <i class="fas fa-water"></i>
+            </button>
+        </div>
+
+        <!-- Produtos -->
+        <div class="destaque" id="destaque">
+            <h1>Nossos Produtos</h1>
+            <div class="grid" id="produtos-destaque"></div>
+        </div>
+    </div>
+
+    <!-- Ícone do Carrinho -->
+    <div class="cart-icon" id="cartIcon" onclick="toggleCart()" style="display: none;">
+        <i class="fas fa-shopping-cart"></i>
+        <span id="cartCount">0</span>
+    </div>
+
+    <!-- Detalhes do Carrinho -->
+    <div class="cart-details" id="cartDetails" style="display: none;">
+        <h3>Carrinho</h3>
+        <div id="cartItems"></div>
+        <div id="cartTotal">Total: R$ 0.00 (Taxa de entrega: Grátis!)</div>
+
+        <!-- Observações do Pedido -->
+        <div class="order-notes">
+            <textarea id="orderNotes" placeholder="Bater na porta, tocar campainha, etc..."></textarea>
+        </div>
+
+        <!-- Cupom -->
+        <div class="cupom-option">
+            <button id="toggleCupomButton" class="cupom-toggle-button" onclick="toggleCupomInput()">
+                Possui um cupom de desconto? <span class="arrow">&#9660;</span>
+            </button>
+            <div id="cupomInputContainer" style="display: none;">
+                <input type="text" id="cupomInput" placeholder="Digite seu cupom">
+                <button class="confirm-button" onclick="aplicarCupom()">Aplicar</button>
+            </div>
+            <div id="cupomAplicadoContainer" style="display: none;">
+                <span id="cupomAplicadoText"></span>
+                <button class="remove-cupom-button" onclick="removerCupom()">Remover</button>
+            </div>
+        </div>
+
+        <!-- Entrega -->
+        <div class="delivery-option">
+            <p>Escolha a opção:</p>
+            <input type="radio" id="delivery" name="deliveryOption" value="Receber em casa" onchange="handleDeliveryOptionChange(this.value)">
+            <label for="delivery">Receber em casa</label>
+            <input type="radio" id="pickup" name="deliveryOption" value="Retirada" onchange="handleDeliveryOptionChange(this.value)">
+            <label for="pickup">Retirada</label>
+        </div>
+
+        <!-- Endereço -->
+        <div class="location-option" id="locationOption" style="display: none;">
+            <p>Informe seu endereço completo:</p>
+            <input type="text" id="addressInput" placeholder="Rua, número, bairro, complemento">
+        </div>
+
+        <!-- Pagamento -->
+        <div class="payment-option">
+            <p>Forma de pagamento:</p>
+            <input type="radio" id="pix" name="paymentOption" value="Pix" onchange="checkPaymentOption()">
+            <label for="pix">Pix</label>
+            <input type="radio" id="card" name="paymentOption" value="Cartão" onchange="checkPaymentOption()">
+            <label for="card">Cartão</label>
+            <input type="radio" id="cash" name="paymentOption" value="Dinheiro" onchange="showCashOption()">
+            <label for="cash">Dinheiro</label>
+        </div>
+
+        <!-- Troco -->
+        <div class="cash-option" id="cashOption" style="display: none;">
+            <p>Precisa de troco?</p>
+            <input type="radio" id="needChangeYes" name="changeOption" value="sim" onchange="toggleCashValueInput(true)">
+            <label for="needChangeYes">Sim</label>
+            <input type="radio" id="needChangeNo" name="changeOption" value="não" onchange="toggleCashValueInput(false)">
+            <label for="needChangeNo">Não</label>
+            <div id="cashValueContainer" style="display: none;">
+                <p>Informe o valor em dinheiro:</p>
+                <input type="number" id="cashValue" placeholder="Valor em dinheiro">
+            </div>
+        </div>
+
+        <!-- Nome do Cliente -->
+        <div class="customer-name">
+            <p>Informe seu nome:</p>
+            <input type="text" id="nameInput" placeholder="Seu nome completo">
+        </div>
+
+        <!-- Finalizar -->
+        <button id="finalizeButton" onclick="finalizeOrder()">Finalizar Pedido</button>
+    </div>
+
+    <!-- Confirmação -->
+    <div class="order-confirmation" id="orderConfirmation" style="display: none;">
+        <h1>Pedido Finalizado!</h1>
+        <div class="confirmation-text">
+            <p class="confirmation-message">Seu pedido já está a caminho da preparação! 💧</p>
+            <p class="confirmation-time">Em cerca de 30 a 40 minutos estará pronto para entrega.<br>Não cobramos taxa de entrega!</p>
+        </div>
+        <div class="social-media">
+            <p class="follow-us">Siga-nos:</p>
+            <div class="social-icons">
+                <a href="https://www.instagram.com/mjaguasmooca" target="_blank">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="https://wa.me/5511965201725" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+            </div>
+        </div>
+        <button onclick="sendOrderAndReturnToCatalog()">Enviar Pedido</button>
+    </div>
+
+    <!-- Rodapé -->
+<footer class="footer" id="mainFooter">
+    <div class="social-container">
+        <span class="follow-us">Siga-nos:</span>
+        <div class="social-icons">
+            <a href="https://www.instagram.com/mjaguas" target="_blank" aria-label="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://wa.me/5511965201725" target="_blank" aria-label="WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+            </a>
+        </div>
+    </div>
+</footer>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="script.js"></script>
+</body>
+</html>
