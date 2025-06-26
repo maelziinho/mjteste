@@ -601,3 +601,40 @@ button:hover,
         padding: 8px 0;
     }
 }
+
+@media (max-width: 600px) {
+    .cart-icon {
+        width: 40px; /* Reduz o tamanho do ícone */
+        height: 40px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .cart-icon span {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6em;
+    }
+    
+    .cart-details {
+        top: 60px;
+        right: 10px;
+        width: calc(100% - 20px);
+        max-width: none;
+        font-size: 0.9em;
+    }
+    
+    .cart-item {
+        font-size: 0.8em;
+        padding: 6px 0;
+    }
+    
+    .adjust-buttons span {
+        margin: 0 3px;
+    }
+    
+    #cartTotal {
+        font-size: 0.9em;
+        padding: 8px 0;
+    }
+}
