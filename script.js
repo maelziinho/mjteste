@@ -57,23 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exibir a capa inicialmente
     document.getElementById('header').style.display = 'block';
     document.getElementById('inicio').style.display = 'none';
-    document.getElementById('cartIcon').style.display = 'none';
+    document.getElementById('cartPage').style.display = 'none';
+    document.getElementById('checkoutPage').style.display = 'none';
+    document.getElementById('orderConfirmation').style.display = 'none';
     document.getElementById('mainFooter').style.display = 'none';
-    
-    // Criar bolhas dinamicamente
-    createBubbles();
 });
 
-function createBubbles() {
-    const bubblesContainer = document.querySelector('.bubbles');
-    for (let i = 0; i < 5; i++) {
-        const bubble = document.createElement('div');
-        bubble.classList.add('bubble');
-        bubblesContainer.appendChild(bubble);
-    }
-}
-
-// ========== FUNÇÕES DA CAPA ========== //
 function updateStatus() {
     const agora = new Date();
     const horaAtual = agora.getHours();
@@ -93,7 +82,9 @@ function updateStatus() {
 function showInicio() {
     document.getElementById('header').style.display = 'none';
     document.getElementById('inicio').style.display = 'block';
-    document.getElementById('cartIcon').style.display = 'flex';
+    document.getElementById('cartPage').style.display = 'none';
+    document.getElementById('checkoutPage').style.display = 'none';
+    document.getElementById('orderConfirmation').style.display = 'none';
     document.getElementById('mainFooter').style.display = 'flex';
     loadDestaqueProducts();
 }
@@ -156,25 +147,41 @@ function adicionarAoCarrinho(id) {
         });
     }
     
-    updateCart();
+    updateCartPage();
     showCoolNotification(`✔️ ${produto.nome} adicionado`);
 }
 
-function toggleCart() {
-    const cartDetails = document.getElementById('cartDetails');
-    cartDetails.style.display = cartDetails.style.display === 'block' ? 'none' : 'block';
-    if (cartDetails.style.display === 'block') {
-        updateCart();
-    }
+function showCartPage() {
+    document.getElementById('header').style.display = 'none';
+    document.getElementById('inicio').style.display = 'none';
+    document.getElementById('cartPage').style.display = 'block';
+    document.getElementById('checkoutPage').style.display = 'none';
+    document.getElementById('orderConfirmation').style.display = 'none';
+    document.getElementById('mainFooter').style.display = 'none';
+    updateCartPage();
 }
 
-function updateCart() {
-    const cartItems = document.getElementById('cartItems');
-    const cartCount = document.getElementById('cartCount');
-    const cartTotal = document.getElementById('cartTotal');
+function backToCatalog() {
+    document.getElementById('cartPage').style.display = 'none';
+    document.getElementById('inicio').style.display = 'block';
+    document.getElementById('mainFooter').style.display = 'flex';
+}
+
+function updateCartPage() {
+    const container = document.getElementById('cartItemsContainer');
+    const cartSubtotal = document.getElementById('cartSubtotal');
+    const cartTotalPrice = document.getElementById('cartTotalPrice');
     
-    cartItems.innerHTML = '';
+    container.innerHTML = '';
     let subtotal = 0;
+    
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="empty-cart">Seu carrinho está vazio</div>';
+        cartSubtotal.textContent = 'R$ 0.00';
+        cartTotalPrice.textContent = 'R$ 0.00';
+        updateCartIcon();
+        return;
+    }
     
     cart.forEach(item => {
         const itemTotal = item.preco * item.quantidade;
@@ -183,15 +190,20 @@ function updateCart() {
         const itemDiv = document.createElement('div');
         itemDiv.classList.add('cart-item');
         itemDiv.innerHTML = `
-            <p>${item.nome} (${item.quantidade}x)</p>
-            <div class="adjust-buttons">
-                <span onclick="updateQuantity(${item.id}, ${item.quantidade - 1})">-</span>
-                <span>${item.quantidade}</span>
-                <span onclick="updateQuantity(${item.id}, ${item.quantidade + 1})">+</span>
+            <div class="item-info">
+                <div class="item-name">${item.nome}</div>
+                <div class="item-price">R$ ${item.preco.toFixed(2)}</div>
             </div>
-            <span class="remove-item" onclick="removeFromCart(${item.id})">🗑️</span>
+            <div class="item-quantity">
+                <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantidade - 1})">-</button>
+                <span>${item.quantidade}</span>
+                <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantidade + 1})">+</button>
+            </div>
+            <div class="remove-item" onclick="removeFromCart(${item.id})">
+                <i class="fas fa-trash"></i>
+            </div>
         `;
-        cartItems.appendChild(itemDiv);
+        container.appendChild(itemDiv);
     });
     
     // Aplicar desconto do cupom
@@ -200,9 +212,37 @@ function updateCart() {
         total *= (1 - cuponsValidos[cupomAplicado].desconto / 100);
     }
     
-    // Sem taxa de entrega
-    deliveryFee = 0;
-    cartTotal.textContent = `Total: R$ ${total.toFixed(2)} (Taxa de entrega: Grátis!)`;
+    // Atualizar totais
+    cartSubtotal.textContent = `R$ ${subtotal.toFixed(2)}`;
+    cartTotalPrice.textContent = `R$ ${total.toFixed(2)}`;
+    
+    // Atualizar cupom
+    updateCouponDisplay();
+    
+    // Atualizar contador do ícone do carrinho
+    updateCartIcon();
+}
+
+function updateCouponDisplay() {
+    const couponApplied = document.getElementById('couponApplied');
+    const appliedCouponText = document.getElementById('appliedCouponText');
+    
+    if (cupomAplicado) {
+        couponApplied.style.display = 'flex';
+        appliedCouponText.textContent = `Cupom: ${cupomAplicado}`;
+        
+        if (cuponsValidos[cupomAplicado].tipo === "percentual") {
+            appliedCouponText.textContent += ` (${cuponsValidos[cupomAplicado].desconto}% de desconto)`;
+        } else if (cuponsValidos[cupomAplicado].tipo === "fretegratis") {
+            appliedCouponText.textContent += ` (Frete Grátis)`;
+        }
+    } else {
+        couponApplied.style.display = 'none';
+    }
+}
+
+function updateCartIcon() {
+    const cartCount = document.getElementById('cartCount');
     cartCount.textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
 }
 
@@ -215,46 +255,25 @@ function updateQuantity(id, newQuantity) {
     const item = cart.find(item => item.id === id);
     if (item) {
         item.quantidade = newQuantity;
-        updateCart();
+        updateCartPage();
     }
 }
 
 function removeFromCart(id) {
     cart = cart.filter(item => item.id !== id);
-    updateCart();
-    if (cart.length === 0) {
-        document.getElementById('cartDetails').style.display = 'none';
-    }
-}
-
-// ========== FUNÇÕES DE CUPOM ========== //
-function toggleCupomInput() {
-    const container = document.getElementById('cupomInputContainer');
-    const toggleButton = document.getElementById('toggleCupomButton');
-    const arrow = toggleButton.querySelector('.arrow');
-    
-    if (container.style.display === 'none' || !container.style.display) {
-        container.style.display = 'flex';
-        arrow.classList.add('rotate');
-    } else {
-        container.style.display = 'none';
-        arrow.classList.remove('rotate');
-    }
+    updateCartPage();
 }
 
 function aplicarCupom() {
-    const cupomInput = document.getElementById('cupomInput').value.trim();
-    const cupomContainer = document.getElementById('cupomAplicadoContainer');
-    const cupomText = document.getElementById('cupomAplicadoText');
+    const cupomInput = document.getElementById('couponCode').value.trim();
+    const cupomContainer = document.getElementById('couponApplied');
+    const cupomText = document.getElementById('appliedCouponText');
     
     if (cuponsValidos[cupomInput]) {
         cupomAplicado = cupomInput;
         cupomText.textContent = `Cupom: ${cupomInput}`;
-        document.getElementById('cupomInputContainer').style.display = 'none';
-        document.getElementById('toggleCupomButton').style.display = 'none';
-        cupomContainer.style.display = 'flex';
         showCoolNotification(`🎉 Cupom aplicado!`);
-        updateCart();
+        updateCartPage();
     } else {
         showCoolNotification("❌ Cupom inválido");
     }
@@ -262,106 +281,229 @@ function aplicarCupom() {
 
 function removerCupom() {
     cupomAplicado = null;
-    document.getElementById('cupomInput').value = '';
-    document.getElementById('cupomAplicadoContainer').style.display = 'none';
-    document.getElementById('toggleCupomButton').style.display = 'block';
-    document.getElementById('cupomInputContainer').style.display = 'none';
-    document.querySelector('.arrow').classList.remove('rotate');
-    updateCart();
+    document.getElementById('couponCode').value = '';
+    updateCartPage();
 }
 
-// ========== FUNÇÕES DE ENTREGA E PAGAMENTO ========== //
-function handleDeliveryOptionChange(option) {
-    const locationOption = document.getElementById('locationOption');
-    if (option === "Receber em casa") {
-        locationOption.style.display = 'block';
+// ========== FUNÇÕES DE CHECKOUT ========== //
+function proceedToCheckout() {
+    if (cart.length === 0) {
+        showCoolNotification("❌ Seu carrinho está vazio");
+        return;
+    }
+    
+    document.getElementById('cartPage').style.display = 'none';
+    document.getElementById('checkoutPage').style.display = 'block';
+    
+    // Iniciar checkout no passo 1
+    document.getElementById('infoSection').style.display = 'block';
+    document.getElementById('paymentSection').style.display = 'none';
+    document.getElementById('confirmSection').style.display = 'none';
+    document.getElementById('step1').classList.add('active');
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step3').classList.remove('active');
+}
+
+function backToCart() {
+    document.getElementById('checkoutPage').style.display = 'none';
+    document.getElementById('cartPage').style.display = 'block';
+}
+
+function selectDeliveryOption(option) {
+    const addressSection = document.getElementById('addressSection');
+    
+    if (option === 'delivery') {
+        document.getElementById('checkoutDelivery').checked = true;
+        addressSection.style.display = 'block';
     } else {
-        locationOption.style.display = 'none';
-    }
-    updateCart();
-}
-
-function toggleCashValueInput(show) {
-    const cashValueContainer = document.getElementById('cashValueContainer');
-    cashValueContainer.style.display = show ? 'block' : 'none';
-    if (!show) {
-        document.getElementById('cashValue').value = '';
+        document.getElementById('checkoutPickup').checked = true;
+        addressSection.style.display = 'none';
     }
 }
 
-function showCashOption() {
-    document.getElementById('cashOption').style.display = 'block';
-    document.getElementById('cashValueContainer').style.display = 'none';
-    document.getElementById('cashValue').value = '';
-    // Desmarcar opções de troco
-    document.getElementById('needChangeYes').checked = false;
-    document.getElementById('needChangeNo').checked = false;
-}
-
-function checkPaymentOption() {
-    document.getElementById('cashOption').style.display = 'none';
-}
-
-// ========== VALIDAÇÃO E FINALIZAÇÃO ========== //
-function validateField(value, fieldName) {
-    if (!value || value.trim() === "") {
-        showCoolNotification(`❌ Por favor, preencha ${fieldName}`);
-        return false;
-    }
-    return true;
-}
-
-function finalizeOrder() {
-    // Validações
-    const nameInput = document.getElementById('nameInput');
-    if (!validateField(nameInput.value, "seu nome")) return;
+function selectPaymentMethod(method) {
+    const cashChangeSection = document.getElementById('cashChangeSection');
     
-    const deliveryOption = document.querySelector('input[name="deliveryOption"]:checked');
-    if (!deliveryOption) {
-        showCoolNotification("❌ Selecione a opção de entrega");
-        return;
-    }
+    document.getElementById(`payment${method.charAt(0).toUpperCase() + method.slice(1)}`).checked = true;
     
-    if (deliveryOption.value === "Receber em casa") {
-        const addressInput = document.getElementById('addressInput');
-        if (!validateField(addressInput.value, "seu endereço")) return;
+    if (method === 'cash') {
+        cashChangeSection.style.display = 'block';
+    } else {
+        cashChangeSection.style.display = 'none';
     }
+}
+
+function selectChangeOption(option) {
+    const cashAmountGroup = document.getElementById('cashAmountGroup');
     
-    const paymentOption = document.querySelector('input[name="paymentOption"]:checked');
-    if (!paymentOption) {
-        showCoolNotification("❌ Selecione a forma de pagamento");
-        return;
+    if (option === 'yes') {
+        document.getElementById('changeYes').checked = true;
+        cashAmountGroup.style.display = 'block';
+    } else {
+        document.getElementById('changeNo').checked = true;
+        cashAmountGroup.style.display = 'none';
+        document.getElementById('cashAmount').value = '';
     }
-    
-    if (paymentOption.value === "Dinheiro") {
-        const needChange = document.querySelector('input[name="changeOption"]:checked');
-        if (!needChange) {
-            showCoolNotification("❌ Selecione se precisa de troco");
+}
+
+function nextStep(step) {
+    // Validação antes de avançar
+    if (step === 'payment') {
+        const name = document.getElementById('checkoutName').value.trim();
+        const phone = document.getElementById('checkoutPhone').value.trim();
+        const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked');
+        
+        if (!name || !phone || !deliveryMethod) {
+            showCoolNotification("❌ Preencha todas as informações obrigatórias");
             return;
         }
         
-        if (needChange.value === "sim") {
-            const cashValue = document.getElementById('cashValue');
-            if (!validateField(cashValue.value, "o valor em dinheiro")) return;
+        if (deliveryMethod.value === 'delivery') {
+            const address = document.getElementById('checkoutAddress').value.trim();
+            if (!address) {
+                showCoolNotification("❌ Informe o endereço de entrega");
+                return;
+            }
+        }
+    } else if (step === 'confirm') {
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+        if (!paymentMethod) {
+            showCoolNotification("❌ Selecione um método de pagamento");
+            return;
+        }
+        
+        if (paymentMethod.value === 'cash') {
+            const changeOption = document.querySelector('input[name="changeOption"]:checked');
+            if (!changeOption) {
+                showCoolNotification("❌ Selecione se precisa de troco");
+                return;
+            }
+            
+            if (changeOption.value === 'yes') {
+                const cashAmount = document.getElementById('cashAmount').value.trim();
+                if (!cashAmount) {
+                    showCoolNotification("❌ Informe o valor em dinheiro");
+                    return;
+                }
+            }
         }
     }
     
-    document.getElementById('orderConfirmation').style.display = 'block';
+    // Atualizar UI
+    document.getElementById('infoSection').style.display = 'none';
+    document.getElementById('paymentSection').style.display = 'none';
+    document.getElementById('confirmSection').style.display = 'none';
+    
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step3').classList.remove('active');
+    
+    if (step === 'payment') {
+        document.getElementById('paymentSection').style.display = 'block';
+        document.getElementById('step2').classList.add('active');
+    } else if (step === 'confirm') {
+        document.getElementById('confirmSection').style.display = 'block';
+        document.getElementById('step3').classList.add('active');
+        updateOrderReview();
+    }
 }
 
-function sendOrderAndReturnToCatalog() {
-    const name = document.getElementById('nameInput').value.trim();
-    const notes = document.getElementById('orderNotes').value.trim();
-    const deliveryOption = document.querySelector('input[name="deliveryOption"]:checked').value;
-    const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
-    const address = deliveryOption === "Receber em casa" ? document.getElementById('addressInput').value.trim() : "";
+function prevStep(step) {
+    document.getElementById('infoSection').style.display = 'none';
+    document.getElementById('paymentSection').style.display = 'none';
+    document.getElementById('confirmSection').style.display = 'none';
     
-    let paymentDetails = paymentOption;
-    if (paymentOption === "Dinheiro") {
-        const needChange = document.querySelector('input[name="changeOption"]:checked').value;
-        if (needChange === "sim") {
-            const cashValue = document.getElementById('cashValue').value;
-            paymentDetails += ` (Troco para R$ ${cashValue})`;
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step3').classList.remove('active');
+    
+    if (step === 'info') {
+        document.getElementById('infoSection').style.display = 'block';
+        document.getElementById('step1').classList.add('active');
+    } else if (step === 'payment') {
+        document.getElementById('paymentSection').style.display = 'block';
+        document.getElementById('step2').classList.add('active');
+    }
+}
+
+function updateOrderReview() {
+    // Informações do cliente
+    document.getElementById('reviewName').textContent = `Nome: ${document.getElementById('checkoutName').value}`;
+    document.getElementById('reviewPhone').textContent = `Telefone: ${document.getElementById('checkoutPhone').value}`;
+    
+    // Método de entrega
+    const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked');
+    if (deliveryMethod.value === 'delivery') {
+        document.getElementById('reviewMethod').textContent = 'Entrega em Casa';
+        document.getElementById('reviewAddress').textContent = `Endereço: ${document.getElementById('checkoutAddress').value}`;
+        document.getElementById('reviewNotes').textContent = document.getElementById('checkoutNotes').value ? 
+            `Observações: ${document.getElementById('checkoutNotes').value}` : '';
+    } else {
+        document.getElementById('reviewMethod').textContent = 'Retirar no Local';
+        document.getElementById('reviewAddress').textContent = '';
+        document.getElementById('reviewNotes').textContent = '';
+    }
+    
+    // Método de pagamento
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+    document.getElementById('reviewPayment').textContent = `Pagamento: ${paymentMethod.value === 'pix' ? 'Pix' : 
+        paymentMethod.value === 'card' ? 'Cartão' : 'Dinheiro'}`;
+    
+    if (paymentMethod.value === 'cash') {
+        const changeOption = document.querySelector('input[name="changeOption"]:checked');
+        if (changeOption.value === 'yes') {
+            document.getElementById('reviewChange').textContent = `Troco para: R$ ${document.getElementById('cashAmount').value}`;
+        } else {
+            document.getElementById('reviewChange').textContent = 'Não precisa de troco';
+        }
+    } else {
+        document.getElementById('reviewChange').textContent = '';
+    }
+    
+    // Itens do pedido
+    const reviewItems = document.getElementById('reviewItems');
+    reviewItems.innerHTML = '';
+    
+    let subtotal = 0;
+    cart.forEach(item => {
+        const itemTotal = item.preco * item.quantidade;
+        subtotal += itemTotal;
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.classList.add('review-item');
+        itemDiv.innerHTML = `
+            <span>${item.nome} (${item.quantidade}x)</span>
+            <span>R$ ${itemTotal.toFixed(2)}</span>
+        `;
+        reviewItems.appendChild(itemDiv);
+    });
+    
+    // Total
+    let total = subtotal;
+    if (cupomAplicado && cuponsValidos[cupomAplicado].tipo === "percentual") {
+        total *= (1 - cuponsValidos[cupomAplicado].desconto / 100);
+    }
+    
+    document.getElementById('reviewTotal').textContent = `R$ ${total.toFixed(2)}`;
+}
+
+function confirmOrder() {
+    // Montar mensagem para WhatsApp
+    const name = document.getElementById('checkoutName').value.trim();
+    const phone = document.getElementById('checkoutPhone').value.trim();
+    const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const address = deliveryMethod === 'delivery' ? document.getElementById('checkoutAddress').value.trim() : '';
+    const notes = document.getElementById('checkoutNotes').value.trim();
+    
+    let paymentDetails = paymentMethod === 'pix' ? 'Pix' : 
+                       paymentMethod === 'card' ? 'Cartão' : 'Dinheiro';
+    
+    if (paymentMethod === 'cash') {
+        const changeOption = document.querySelector('input[name="changeOption"]:checked').value;
+        if (changeOption === 'yes') {
+            const cashAmount = document.getElementById('cashAmount').value;
+            paymentDetails += ` (Troco para R$ ${cashAmount})`;
         } else {
             paymentDetails += " (Não precisa de troco)";
         }
@@ -378,7 +520,8 @@ function sendOrderAndReturnToCatalog() {
     
     // Montar mensagem para WhatsApp com quebras de linha
     let message = `*Pedido MJ Águas*\n\n`;
-    message += `*Cliente:* ${name}\n\n`;
+    message += `*Cliente:* ${name}\n`;
+    message += `*Telefone:* ${phone}\n\n`;
     
     message += `*Itens do pedido:*\n`;
     cart.forEach(item => {
@@ -397,8 +540,8 @@ function sendOrderAndReturnToCatalog() {
     message += `*Taxa de entrega:* Grátis!\n`;
     message += `*Total:* R$ ${total.toFixed(2)}\n\n`;
     
-    message += `*Forma de entrega:* ${deliveryOption}\n`;
-    if (deliveryOption === "Receber em casa") {
+    message += `*Forma de entrega:* ${deliveryMethod === 'delivery' ? 'Entrega em Casa' : 'Retirar no Local'}\n`;
+    if (deliveryMethod === 'delivery') {
         message += `*Endereço:* ${address}\n`;
     }
     message += `*Forma de pagamento:* ${paymentDetails}\n\n`;
@@ -410,30 +553,18 @@ function sendOrderAndReturnToCatalog() {
     message += `Aguardando confirmação!\nObrigado por escolher MJ Águas!`;
     
     // Enviar para WhatsApp
-    const phone = "5511965201725"; // Número do WhatsApp
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const phoneNumber = "5511965201725";
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
     
-    // Resetar tudo
-    resetOrder();
-}
-
-function resetOrder() {
+    // Mostrar confirmação
+    document.getElementById('checkoutPage').style.display = 'none';
+    document.getElementById('orderConfirmation').style.display = 'block';
+    
+    // Resetar carrinho
     cart = [];
     cupomAplicado = null;
-    document.getElementById('orderConfirmation').style.display = 'none';
-    document.getElementById('cartDetails').style.display = 'none';
-    document.getElementById('cartCount').textContent = '0';
-    document.getElementById('nameInput').value = '';
-    document.getElementById('orderNotes').value = '';
-    document.getElementById('addressInput').value = '';
-    document.getElementById('cashValue').value = '';
-    document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
-    document.getElementById('cashOption').style.display = 'none';
-    document.getElementById('locationOption').style.display = 'none';
-    
-    // Voltar para o catálogo
-    showInicio();
+    updateCartIcon();
 }
 
 // ========== NOTIFICAÇÕES ========== //
