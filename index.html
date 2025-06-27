@@ -57,6 +57,10 @@
             <button class="categoria-button" onclick="filterProducts('Galão')" title="Galão">
                 <i class="fas fa-water"></i>
             </button>
+            <button class="categoria-button" onclick="showCartPage()" title="Carrinho">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cartCount">0</span>
+            </button>
         </div>
 
         <!-- Produtos -->
@@ -66,85 +70,214 @@
         </div>
     </div>
 
-    <!-- Ícone do Carrinho -->
-    <div class="cart-icon" id="cartIcon" onclick="toggleCart()" style="display: none;">
-        <i class="fas fa-shopping-cart"></i>
-        <span id="cartCount">0</span>
+    <!-- Página do Carrinho -->
+    <div class="cart-page" id="cartPage" style="display: none;">
+        <div class="cart-header">
+            <button class="back-button" onclick="backToCatalog()">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+            <h1>Seu Carrinho</h1>
+        </div>
+        
+        <div class="cart-content">
+            <div id="cartItemsContainer" class="cart-items-container">
+                <!-- Itens serão inseridos aqui via JavaScript -->
+            </div>
+            
+            <div class="order-summary">
+                <h3>Resumo do Pedido</h3>
+                <div class="summary-details">
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span id="cartSubtotal">R$ 0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Entrega</span>
+                        <span id="cartDelivery">Grátis</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total</span>
+                        <span id="cartTotalPrice">R$ 0.00</span>
+                    </div>
+                </div>
+                
+                <!-- Cupom -->
+                <div class="coupon-section">
+                    <div id="couponApplied" style="display: none;">
+                        <span id="appliedCouponText"></span>
+                        <button class="remove-coupon" onclick="removerCupom()">Remover</button>
+                    </div>
+                    <div id="couponInputSection">
+                        <input type="text" id="couponCode" placeholder="Código do cupom">
+                        <button onclick="aplicarCupom()">Aplicar</button>
+                    </div>
+                </div>
+                
+                <!-- Botão Finalizar -->
+                <button class="checkout-button" onclick="proceedToCheckout()">Finalizar Compra</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Detalhes do Carrinho -->
-    <div class="cart-details" id="cartDetails" style="display: none;">
-        <h3>Carrinho</h3>
-        <div id="cartItems"></div>
-        <div id="cartTotal">Total: R$ 0.00 (Taxa de entrega: Grátis!)</div>
-
-        <!-- Observações do Pedido -->
-        <div class="order-notes">
-            <textarea id="orderNotes" placeholder="Bater na porta, tocar campainha, etc..."></textarea>
-        </div>
-
-        <!-- Cupom -->
-        <div class="cupom-option">
-            <button id="toggleCupomButton" class="cupom-toggle-button" onclick="toggleCupomInput()">
-                Possui um cupom de desconto? <span class="arrow">&#9660;</span>
+    <!-- Página de Checkout -->
+    <div class="checkout-page" id="checkoutPage" style="display: none;">
+        <div class="checkout-header">
+            <button class="back-button" onclick="backToCart()">
+                <i class="fas fa-arrow-left"></i> Voltar
             </button>
-            <div id="cupomInputContainer" style="display: none;">
-                <input type="text" id="cupomInput" placeholder="Digite seu cupom">
-                <button class="confirm-button" onclick="aplicarCupom()">Aplicar</button>
+            <h1>Finalizar Pedido</h1>
+        </div>
+        
+        <div class="checkout-steps">
+            <div class="step active" id="step1">1. Informações</div>
+            <div class="step" id="step2">2. Pagamento</div>
+            <div class="step" id="step3">3. Confirmação</div>
+        </div>
+        
+        <div class="checkout-content">
+            <!-- Seção de Informações -->
+            <div class="checkout-section active" id="infoSection">
+                <h2>Informações do Cliente</h2>
+                <div class="form-group">
+                    <label for="checkoutName">Nome Completo*</label>
+                    <input type="text" id="checkoutName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkoutPhone">Telefone*</label>
+                    <input type="tel" id="checkoutPhone" required>
+                </div>
+                
+                <h2>Método de Entrega</h2>
+                <div class="delivery-options">
+                    <div class="delivery-option" onclick="selectDeliveryOption('delivery')">
+                        <input type="radio" id="checkoutDelivery" name="deliveryMethod" value="delivery">
+                        <label for="checkoutDelivery">
+                            <i class="fas fa-motorcycle"></i>
+                            <span>Entrega em Casa</span>
+                        </label>
+                    </div>
+                    
+                    <div class="delivery-option" onclick="selectDeliveryOption('pickup')">
+                        <input type="radio" id="checkoutPickup" name="deliveryMethod" value="pickup">
+                        <label for="checkoutPickup">
+                            <i class="fas fa-store"></i>
+                            <span>Retirar no Local</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="address-section" id="addressSection" style="display: none;">
+                    <div class="form-group">
+                        <label for="checkoutAddress">Endereço Completo*</label>
+                        <input type="text" id="checkoutAddress" placeholder="Rua, número, bairro, complemento">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="checkoutNotes">Observações</label>
+                        <textarea id="checkoutNotes" placeholder="Bater na porta, tocar campainha, etc..."></textarea>
+                    </div>
+                </div>
+                
+                <button class="next-button" onclick="nextStep('payment')">Continuar para Pagamento</button>
             </div>
-            <div id="cupomAplicadoContainer" style="display: none;">
-                <span id="cupomAplicadoText"></span>
-                <button class="remove-cupom-button" onclick="removerCupom()">Remover</button>
+            
+            <!-- Seção de Pagamento -->
+            <div class="checkout-section" id="paymentSection">
+                <h2>Método de Pagamento</h2>
+                
+                <div class="payment-options">
+                    <div class="payment-option" onclick="selectPaymentMethod('pix')">
+                        <input type="radio" id="paymentPix" name="paymentMethod" value="pix">
+                        <label for="paymentPix">
+                            <i class="fas fa-qrcode"></i>
+                            <span>Pix</span>
+                        </label>
+                    </div>
+                    
+                    <div class="payment-option" onclick="selectPaymentMethod('card')">
+                        <input type="radio" id="paymentCard" name="paymentMethod" value="card">
+                        <label for="paymentCard">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Cartão</span>
+                        </label>
+                    </div>
+                    
+                    <div class="payment-option" onclick="selectPaymentMethod('cash')">
+                        <input type="radio" id="paymentCash" name="paymentMethod" value="cash">
+                        <label for="paymentCash">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Dinheiro</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Seção de Troco -->
+                <div class="cash-change-section" id="cashChangeSection" style="display: none;">
+                    <h3>Precisa de troco?</h3>
+                    <div class="change-options">
+                        <div class="change-option" onclick="selectChangeOption('yes')">
+                            <input type="radio" id="changeYes" name="changeOption" value="yes">
+                            <label for="changeYes">Sim</label>
+                        </div>
+                        
+                        <div class="change-option" onclick="selectChangeOption('no')">
+                            <input type="radio" id="changeNo" name="changeOption" value="no">
+                            <label for="changeNo">Não</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="cashAmountGroup" style="display: none;">
+                        <label for="cashAmount">Valor em dinheiro*</label>
+                        <input type="number" id="cashAmount" placeholder="Informe o valor que irá pagar">
+                    </div>
+                </div>
+                
+                <div class="navigation-buttons">
+                    <button class="back-button" onclick="prevStep('info')">Voltar</button>
+                    <button class="next-button" onclick="nextStep('confirm')">Continuar</button>
+                </div>
+            </div>
+            
+            <!-- Seção de Confirmação -->
+            <div class="checkout-section" id="confirmSection">
+                <h2>Confirmação do Pedido</h2>
+                
+                <div class="order-review">
+                    <div class="review-section">
+                        <h3>Informações</h3>
+                        <p id="reviewName"></p>
+                        <p id="reviewPhone"></p>
+                    </div>
+                    
+                    <div class="review-section">
+                        <h3>Entrega</h3>
+                        <p id="reviewMethod"></p>
+                        <p id="reviewAddress"></p>
+                        <p id="reviewNotes"></p>
+                    </div>
+                    
+                    <div class="review-section">
+                        <h3>Pagamento</h3>
+                        <p id="reviewPayment"></p>
+                        <p id="reviewChange"></p>
+                    </div>
+                    
+                    <div class="review-section">
+                        <h3>Itens do Pedido</h3>
+                        <div id="reviewItems"></div>
+                        <div class="review-total">
+                            <p>Total: <span id="reviewTotal"></span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="navigation-buttons">
+                    <button class="back-button" onclick="prevStep('payment')">Voltar</button>
+                    <button class="confirm-button" onclick="confirmOrder()">Confirmar Pedido</button>
+                </div>
             </div>
         </div>
-
-        <!-- Entrega -->
-        <div class="delivery-option">
-            <p>Escolha a opção:</p>
-            <input type="radio" id="delivery" name="deliveryOption" value="Receber em casa" onchange="handleDeliveryOptionChange(this.value)">
-            <label for="delivery">Receber em casa</label>
-            <input type="radio" id="pickup" name="deliveryOption" value="Retirada" onchange="handleDeliveryOptionChange(this.value)">
-            <label for="pickup">Retirada</label>
-        </div>
-
-        <!-- Endereço -->
-        <div class="location-option" id="locationOption" style="display: none;">
-            <p>Informe seu endereço completo:</p>
-            <input type="text" id="addressInput" placeholder="Rua, número, bairro, complemento">
-        </div>
-
-        <!-- Pagamento -->
-        <div class="payment-option">
-            <p>Forma de pagamento:</p>
-            <input type="radio" id="pix" name="paymentOption" value="Pix" onchange="checkPaymentOption()">
-            <label for="pix">Pix</label>
-            <input type="radio" id="card" name="paymentOption" value="Cartão" onchange="checkPaymentOption()">
-            <label for="card">Cartão</label>
-            <input type="radio" id="cash" name="paymentOption" value="Dinheiro" onchange="showCashOption()">
-            <label for="cash">Dinheiro</label>
-        </div>
-
-        <!-- Troco -->
-        <div class="cash-option" id="cashOption" style="display: none;">
-            <p>Precisa de troco?</p>
-            <input type="radio" id="needChangeYes" name="changeOption" value="sim" onchange="toggleCashValueInput(true)">
-            <label for="needChangeYes">Sim</label>
-            <input type="radio" id="needChangeNo" name="changeOption" value="não" onchange="toggleCashValueInput(false)">
-            <label for="needChangeNo">Não</label>
-            <div id="cashValueContainer" style="display: none;">
-                <p>Informe o valor em dinheiro:</p>
-                <input type="number" id="cashValue" placeholder="Valor em dinheiro">
-            </div>
-        </div>
-
-        <!-- Nome do Cliente -->
-        <div class="customer-name">
-            <p>Informe seu nome:</p>
-            <input type="text" id="nameInput" placeholder="Seu nome completo">
-        </div>
-
-        <!-- Finalizar -->
-        <button id="finalizeButton" onclick="finalizeOrder()">Finalizar Pedido</button>
     </div>
 
     <!-- Confirmação -->
@@ -165,23 +298,23 @@
                 </a>
             </div>
         </div>
-        <button onclick="sendOrderAndReturnToCatalog()">Enviar Pedido</button>
+        <button onclick="window.location.href='index.html'">Voltar ao Início</button>
     </div>
 
     <!-- Rodapé -->
-<footer class="footer" id="mainFooter">
-    <div class="social-container">
-        <span class="follow-us">Siga-nos:</span>
-        <div class="social-icons">
-            <a href="https://www.instagram.com/mjaguas" target="_blank" aria-label="Instagram">
-                <i class="fab fa-instagram"></i>
-            </a>
-            <a href="https://wa.me/5511965201725" target="_blank" aria-label="WhatsApp">
-                <i class="fab fa-whatsapp"></i>
-            </a>
+    <footer class="footer" id="mainFooter">
+        <div class="social-container">
+            <span class="follow-us">Siga-nos:</span>
+            <div class="social-icons">
+                <a href="https://www.instagram.com/mjaguas" target="_blank" aria-label="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="https://wa.me/5511965201725" target="_blank" aria-label="WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+            </div>
         </div>
-    </div>
-</footer>
+    </footer>
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
